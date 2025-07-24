@@ -86,7 +86,7 @@ class RegexParser:
         elements = []
         while True:
             tok = self._peek()
-            if tok is None or (tok.type == 'SPECIAL' and tok.value in '|)'):
+            if tok is None or (tok.type == 'SPECIAL' and tok.value == '|') or (tok.type == 'GROUP_CLOSE'):
                 break
             elements.append(self._parse_quantifier())
         if len(elements) == 1:
@@ -94,6 +94,7 @@ class RegexParser:
         return Sequence(elements)
 
     def _parse_quantifier(self):
+        # Always allow quantifiers to apply to any atom, including Anchor
         atom = self._parse_atom()
         tok = self._peek()
         if tok and tok.type == 'QUANTIFIER':
@@ -144,34 +145,50 @@ class RegexParser:
         flags = None
         condition = None
         # Inline flags: (?i), (?m), (?s), or scoped flags (?i:...)
-        if group_type == 'GROUP_OPEN' and self._peek() and self._peek().type == 'SPECIAL' and self._peek().value == '?':
-            # Look for inline flags or conditional
-            self._advance()  # skip '?'
-            flag_str = ''
-            while self._peek() and self._peek().type == 'LITERAL' and self._peek().value in 'imsxauL':
-                flag_str += self._advance().value
-            if self._peek() and self._peek().type == 'SPECIAL' and self._peek().value == ':':
-                self._advance()  # skip ':'
-                flags = flag_str
+        if group_type == 'GROUP_FLAGS':
+            # Distinguish between inline and scoped flags
+            import re
+            m = re.match(r'\(\?[a-zA-Z]+([):])', tok.value)
+            if m and m.group(1) == ')':
+                # Inline flags group, e.g., (?i)
+                flags = tok.value[2:-1]  # extract flags between (? and )
+                return Group('GROUP_FLAGS', [], None, flags=flags)
+            elif m and m.group(1) == ':':
+                # Scoped flags group, e.g., (?m:...)
+                flags = tok.value[2:-1]  # extract flags between (? and :
                 group_type = 'GROUP_FLAGS'
-            elif self._peek() and self._peek().type == 'LITERAL' and self._peek().value == ')':
-                self._advance()  # skip ')'
-                return Group('GROUP_FLAGS', [], None, flags=flag_str)
-            else:
-                # Could be a conditional expression (?a)...
-                if self._peek() and self._peek().type == 'LITERAL':
-                    condition = flag_str + self._advance().value
-                    group_type = 'GROUP_CONDITIONAL'
+                # Parse group contents until closing paren
+                children = []
+                if self._peek() and self._peek().type == 'GROUP_CLOSE':
+                    self._advance()  # empty group
+                    return Group(group_type, children, name, flags, condition)
+                children.append(self._parse_alternation())
+                if self._peek() and self._peek().type == 'GROUP_CLOSE':
+                    self._advance()
+                else:
+                    raise ValueError('Unclosed group: missing )')
+                return Group(group_type, children, name, flags, condition)
         if group_type == 'GROUP_NAMED':
             # Extract group name from value, e.g., (?P<name>
             import re
             m = re.match(r'\(\?P<([^>]+)>', tok.value)
             if m:
-                name = m.group(2)
+                name = m.group(1)  # FIX: should be group(1), not group(2)
+        # For lookahead/lookbehind/noncap/flags/conditional and other group types, parse contents then expect GROUP_CLOSE
         children = []
-        # Parse group contents until closing paren
+        if group_type in {'GROUP_LOOKAHEAD', 'GROUP_NEG_LOOKAHEAD', 'GROUP_LOOKBEHIND', 'GROUP_NEG_LOOKBEHIND', 'GROUP_NONCAP', 'GROUP_FLAGS', 'GROUP_CONDITIONAL', 'GROUP_NAMED'}:
+            # Parse group contents until closing paren
+            if self._peek() and self._peek().type == 'GROUP_CLOSE':
+                self._advance()  # empty group
+                return Group(group_type, children, name, flags, condition)
+            children.append(self._parse_alternation())
+            if self._peek() and self._peek().type == 'GROUP_CLOSE':
+                self._advance()
+            else:
+                raise ValueError('Unclosed group: missing )')
+            return Group(group_type, children, name, flags, condition)
+        # For capturing groups, parse alternation (may be nested)
         if self._peek() and self._peek().type == 'GROUP_CLOSE':
-            # Empty group: () or (?:)
             self._advance()  # consume ')'
             return Group(group_type, children, name, flags, condition)
         while self._peek() and not (self._peek().type == 'GROUP_CLOSE'):
@@ -179,7 +196,6 @@ class RegexParser:
         if self._peek() and self._peek().type == 'GROUP_CLOSE':
             self._advance()  # consume ')'
         else:
-            # Unclosed group
             raise ValueError('Unclosed group: missing )')
         return Group(group_type, children, name, flags, condition)
 
@@ -272,6 +288,10 @@ class RegexParser:
                 if i < length and pattern[i] == '}':
                     i += 1
                 tokens.append(RegexToken(type='QUANTIFIER', value=pattern[start:i]))
+            # Quantifiers *, +, ?
+            elif c in {'*', '+', '?'}:
+                tokens.append(RegexToken(type='QUANTIFIER', value=c))
+                i += 1
             # Escape sequences (including Unicode/ASCII/Named)
             elif c == '\\':
                 if i + 1 < length:
@@ -303,7 +323,7 @@ class RegexParser:
                 else:
                     tokens.append(RegexToken(type='ESCAPE', value=c))
                     i += 1
-            # Specials
+            # Specials (other than quantifiers)
             elif c in special_chars:
                 tokens.append(RegexToken(type='SPECIAL', value=c))
                 i += 1
