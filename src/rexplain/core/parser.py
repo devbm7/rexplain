@@ -1,24 +1,83 @@
-from typing import List, Optional
-from dataclasses import dataclass
+from typing import List, Optional, Union
+from dataclasses import dataclass, field
 import re
 
 @dataclass
-class RegexToken:
-    """Represents a single regex component"""
-    type: str
+class RegexAST:
+    """Base class for all AST nodes."""
+    pass
+
+@dataclass
+class Sequence(RegexAST):
+    """A sequence of regex elements (e.g., abcd)."""
+    elements: List[RegexAST]
+
+@dataclass
+class Literal(RegexAST):
+    """A literal character."""
     value: str
 
-class RegexAST:
-    """Abstract Syntax Tree for regex"""
-    pass
+@dataclass
+class CharClass(RegexAST):
+    """A character class, e.g., [a-z] or [^abc]."""
+    value: str  # The raw class string, e.g., '[a-z]'
+
+@dataclass
+class Group(RegexAST):
+    """A group (capturing, non-capturing, named, lookahead, etc.)."""
+    group_type: str  # 'capturing', 'noncap', 'named', 'lookahead', etc.
+    children: List[RegexAST]
+    name: Optional[str] = None  # For named groups
+
+@dataclass
+class Quantifier(RegexAST):
+    """A quantifier applied to a subpattern, e.g., a*, b{2,3}."""
+    child: RegexAST
+    quant: str  # '*', '+', '?', '{n}', '{n,m}', etc.
+
+@dataclass
+class Anchor(RegexAST):
+    """Anchors like ^, $, \b, etc."""
+    value: str
+
+@dataclass
+class Escape(RegexAST):
+    """Escape sequences like \d, \w, etc."""
+    value: str
+
+@dataclass
+class Alternation(RegexAST):
+    """Alternation, e.g., a|b|c."""
+    options: List[RegexAST]
 
 class RegexParser:
     """Parse regex string into AST"""
     def parse(self, pattern: str, flags: int = 0) -> RegexAST:
         """Parse a regex pattern string into an AST. Optionally takes re flags (default: 0)."""
-        pass
+        tokens = self.tokenize(pattern, flags)
+        ast_nodes = []
+        for token in tokens:
+            if token.type == 'LITERAL':
+                ast_nodes.append(Literal(token.value))
+            elif token.type == 'CHAR_CLASS':
+                ast_nodes.append(CharClass(token.value))
+            elif token.type == 'ESCAPE':
+                ast_nodes.append(Escape(token.value))
+            elif token.type == 'SPECIAL':
+                if token.value in {'^', '$'}:
+                    ast_nodes.append(Anchor(token.value))
+                else:
+                    ast_nodes.append(Literal(token.value))
+            elif token.type == 'QUANTIFIER':
+                # For MVP, treat as literal (real quantifier handling needs context)
+                ast_nodes.append(Quantifier(Literal(''), token.value))
+            elif token.type.startswith('GROUP_'):
+                ast_nodes.append(Group(token.type, [], None))
+            else:
+                ast_nodes.append(Literal(token.value))
+        return Sequence(ast_nodes)
 
-    def tokenize(self, pattern: str, flags: int = 0) -> List[RegexToken]:
+    def tokenize(self, pattern: str, flags: int = 0) -> List['RegexToken']:
         """Tokenize a regex pattern string into RegexToken objects, including character classes and groups. Optionally takes re flags (default: 0)."""
         tokens: List[RegexToken] = []
         i = 0
@@ -106,3 +165,9 @@ class RegexParser:
                 tokens.append(RegexToken(type='LITERAL', value=c))
                 i += 1
         return tokens
+
+@dataclass
+class RegexToken:
+    """Represents a single regex component"""
+    type: str
+    value: str
