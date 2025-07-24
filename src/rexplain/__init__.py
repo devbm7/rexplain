@@ -1,4 +1,4 @@
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 
 from .core.explainer import RegexExplainer
 from .core.generator import ExampleGenerator

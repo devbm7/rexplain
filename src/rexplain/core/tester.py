@@ -18,6 +18,12 @@ class MatchResult:
     failed_at: Optional[int] = None
     partial_matches: Optional[List[str]] = None
 
+    def __str__(self):
+        return (
+            f"MatchResult(matches={self.matches}, reason=\"{self.reason}\", "
+            f"failed_at={self.failed_at}, partial_matches={self.partial_matches})"
+        )
+
 class RegexTester:
     """
     Tests if a string matches a regex pattern and provides detailed feedback.
@@ -92,8 +98,7 @@ class RegexTester:
                     import re as _re
                     esc = node.value
                     esc_re = _re.compile(esc)
-                    # Show the escape as written in the pattern (single backslash)
-                    display_esc = esc.encode('utf-8').decode('unicode_escape') if esc.startswith('\\') else esc
+                    display_esc = esc  # Always show as written (e.g., '\d')
                     if esc_re.fullmatch(c):
                         details.append(f"{c!r} matches escape {display_esc} at position {j}")
                         i += 1
