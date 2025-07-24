@@ -22,13 +22,19 @@ class RegexParser:
         tokens: List[RegexToken] = []
         i = 0
         special_chars = {'.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '^', '$'}
+        escape_sequences = {'d', 'w', 's', 'D', 'W', 'S', 'b', 'B', 'A', 'Z', 'G', 'n', 'r', 't', 'v', 'f', '\\'}
         while i < len(pattern):
             c = pattern[i]
             if c == '\\':
                 # Handle escape sequence
                 if i + 1 < len(pattern):
-                    tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
-                    i += 2
+                    next_c = pattern[i+1]
+                    if next_c in escape_sequences:
+                        tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
+                        i += 2
+                    else:
+                        tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
+                        i += 2
                 else:
                     tokens.append(RegexToken(type='ESCAPE', value=c))
                     i += 1

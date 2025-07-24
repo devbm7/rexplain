@@ -6,7 +6,7 @@ from rexplain.core.parser import RegexParser, RegexToken
 
 def test_tokenize_basic():
     parser = RegexParser()
-    pattern = r'a*b+c?\\d'
+    pattern = r'a*b+c?\d'
     tokens = parser.tokenize(pattern)
     expected = [
         RegexToken(type='LITERAL', value='a'),
@@ -15,7 +15,7 @@ def test_tokenize_basic():
         RegexToken(type='SPECIAL', value='+'),
         RegexToken(type='LITERAL', value='c'),
         RegexToken(type='SPECIAL', value='?'),
-        RegexToken(type='ESCAPE', value='\\\d'),
+        RegexToken(type='ESCAPE', value=r'\d'),
     ]
     assert tokens == expected, f"Expected {expected}, got {tokens}"
 
