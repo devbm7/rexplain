@@ -4,9 +4,12 @@ from .parser import RegexParser, RegexAST, Literal, CharClass, Escape, Quantifie
 
 class ExampleGenerator:
     """
-    Generate example strings that match a given regex pattern using the AST.
+    Generates example strings that match a given regex pattern using the AST.
     """
     def __init__(self):
+        """
+        Initialize the ExampleGenerator.
+        """
         self.parser = RegexParser()
         # For negated char classes, pick from this set
         self.default_charset = [chr(i) for i in range(32, 127)]
@@ -14,6 +17,14 @@ class ExampleGenerator:
     def generate(self, pattern: str, count: int = 3, flags: int = 0) -> List[str]:
         """
         Generate a list of example strings that match the given regex pattern.
+
+        Args:
+            pattern (str): The regex pattern.
+            count (int, optional): Number of examples to generate. Defaults to 3.
+            flags (int, optional): Regex flags (e.g., re.IGNORECASE). Defaults to 0.
+
+        Returns:
+            List[str]: Example strings matching the pattern.
         """
         ast = self.parser.parse(pattern, flags=flags)
         return [self._generate_from_ast(ast) for _ in range(count)]

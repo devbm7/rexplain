@@ -4,27 +4,37 @@ import re
 
 @dataclass
 class RegexAST:
-    """Base class for all AST nodes."""
+    """
+    Base class for all AST nodes representing regex components.
+    """
     pass
 
 @dataclass
 class Sequence(RegexAST):
-    """A sequence of regex elements (e.g., abcd)."""
+    """
+    Represents a sequence of regex elements (e.g., abcd).
+    """
     elements: List[RegexAST]
 
 @dataclass
 class Literal(RegexAST):
-    """A literal character."""
+    """
+    Represents a literal character in the regex.
+    """
     value: str
 
 @dataclass
 class CharClass(RegexAST):
-    """A character class, e.g., [a-z] or [^abc]."""
+    """
+    Represents a character class, e.g., [a-z] or [^abc].
+    """
     value: str  # The raw class string, e.g., '[a-z]'
 
 @dataclass
 class Group(RegexAST):
-    """A group (capturing, non-capturing, named, lookahead, etc.)."""
+    """
+    Represents a group (capturing, non-capturing, named, lookahead, etc.).
+    """
     group_type: str  # 'capturing', 'noncap', 'named', 'lookahead', etc.
     children: List[RegexAST]
     name: Optional[str] = None  # For named groups
@@ -33,29 +43,48 @@ class Group(RegexAST):
 
 @dataclass
 class Quantifier(RegexAST):
-    """A quantifier applied to a subpattern, e.g., a*, b{2,3}."""
+    """
+    Represents a quantifier applied to a subpattern, e.g., a*, b{2,3}.
+    """
     child: RegexAST
     quant: str  # '*', '+', '?', '{n}', '{n,m}', etc.
 
 @dataclass
 class Anchor(RegexAST):
-    """Anchors like ^, $, \b, etc."""
+    """
+    Represents anchors like ^, $, \b, etc.
+    """
     value: str
 
 @dataclass
 class Escape(RegexAST):
-    """Escape sequences like \d, \w, etc."""
+    """
+    Represents escape sequences like \d, \w, etc.
+    """
     value: str
 
 @dataclass
 class Alternation(RegexAST):
-    """Alternation, e.g., a|b|c."""
+    """
+    Represents alternation, e.g., a|b|c.
+    """
     options: List[RegexAST]
 
 class RegexParser:
-    """Parse regex string into AST"""
+    """
+    Parses a regex string into an abstract syntax tree (AST).
+    """
     def parse(self, pattern: str, flags: int = 0) -> RegexAST:
-        """Parse a regex pattern string into an AST. Optionally takes re flags (default: 0)."""
+        """
+        Parse a regex pattern string into an AST.
+
+        Args:
+            pattern (str): The regex pattern to parse.
+            flags (int, optional): Regex flags (e.g., re.IGNORECASE). Defaults to 0.
+
+        Returns:
+            RegexAST: The root node of the parsed regex AST.
+        """
         tokens = self.tokenize(pattern, flags)
         self._tokens = tokens
         self._pos = 0
@@ -200,7 +229,16 @@ class RegexParser:
         return Group(group_type, children, name, flags, condition)
 
     def tokenize(self, pattern: str, flags: int = 0) -> List['RegexToken']:
-        """Tokenize a regex pattern string into RegexToken objects, including character classes and groups. Optionally takes re flags (default: 0)."""
+        """
+        Tokenize a regex pattern string into RegexToken objects, including character classes and groups.
+
+        Args:
+            pattern (str): The regex pattern to tokenize.
+            flags (int, optional): Regex flags (e.g., re.IGNORECASE). Defaults to 0.
+
+        Returns:
+            List[RegexToken]: List of tokens representing the regex pattern.
+        """
         tokens: List[RegexToken] = []
         i = 0
         special_chars = {'.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '^', '$'}
@@ -337,6 +375,8 @@ class RegexParser:
 
 @dataclass
 class RegexToken:
-    """Represents a single regex component"""
+    """
+    Represents a single regex component (token) in the pattern.
+    """
     type: str
     value: str

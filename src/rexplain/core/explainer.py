@@ -145,12 +145,33 @@ def _quantifier_explanation(quant: str) -> str:
 
 
 def explain(ast: RegexAST) -> str:
-    """Return a line-by-line, context-aware explanation of the regex AST."""
+    """
+    Return a line-by-line, context-aware explanation of the regex AST.
+
+    Args:
+        ast (RegexAST): The root node of the regex AST.
+
+    Returns:
+        str: A formatted, line-by-line explanation of the regex pattern.
+    """
     lines = _token_and_explanation(ast)
     return '\n'.join(lines)
 
 class RegexExplainer:
+    """
+    Provides human-readable explanations for regex patterns.
+    """
     def explain(self, pattern: str, flags: int = 0) -> str:
+        """
+        Explain a regex pattern as a formatted, line-by-line string.
+
+        Args:
+            pattern (str): The regex pattern to explain.
+            flags (int, optional): Regex flags (e.g., re.IGNORECASE). Defaults to 0.
+
+        Returns:
+            str: A line-by-line explanation of the regex pattern.
+        """
         from .parser import RegexParser
         ast = RegexParser().parse(pattern, flags=flags)
         return explain(ast)

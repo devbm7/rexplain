@@ -4,6 +4,15 @@ from dataclasses import dataclass
 
 @dataclass
 class MatchResult:
+    """
+    Represents the result of testing a string against a regex pattern.
+
+    Attributes:
+        matches (bool): Whether the string fully matches the pattern.
+        reason (str): Explanation of the match or failure.
+        failed_at (Optional[int]): Index where the match failed, if applicable.
+        partial_matches (Optional[List[str]]): List of partial matches, if any.
+    """
     matches: bool
     reason: str
     failed_at: Optional[int] = None
@@ -11,9 +20,20 @@ class MatchResult:
 
 class RegexTester:
     """
-    Test if a string matches a regex pattern and provide detailed feedback.
+    Tests if a string matches a regex pattern and provides detailed feedback.
     """
     def test(self, pattern: str, test_string: str, flags: int = 0) -> MatchResult:
+        """
+        Test if a string matches a regex pattern and explain why/why not.
+
+        Args:
+            pattern (str): The regex pattern.
+            test_string (str): The string to test.
+            flags (int, optional): Regex flags (e.g., re.IGNORECASE). Defaults to 0.
+
+        Returns:
+            MatchResult: Result object with match status and explanation.
+        """
         prog = re.compile(pattern, flags)
         m = prog.fullmatch(test_string)
         if m:
