@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from dataclasses import dataclass
 import re
 
@@ -14,12 +14,12 @@ class RegexAST:
 
 class RegexParser:
     """Parse regex string into AST"""
-    def parse(self, pattern: str) -> RegexAST:
-        """Parse a regex pattern string into an AST"""
+    def parse(self, pattern: str, flags: int = 0) -> RegexAST:
+        """Parse a regex pattern string into an AST. Optionally takes re flags (default: 0)."""
         pass
 
-    def tokenize(self, pattern: str) -> List[RegexToken]:
-        """Tokenize a regex pattern string into RegexToken objects, including character classes and groups."""
+    def tokenize(self, pattern: str, flags: int = 0) -> List[RegexToken]:
+        """Tokenize a regex pattern string into RegexToken objects, including character classes and groups. Optionally takes re flags (default: 0)."""
         tokens: List[RegexToken] = []
         i = 0
         special_chars = {'.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '^', '$'}
@@ -48,13 +48,16 @@ class RegexParser:
                 if pattern[i:i+3] == '(?:':
                     tokens.append(RegexToken(type='GROUP_NONCAP', value='(?:'))
                     i += 3
-                elif pattern[i:i+4] == '(?P':
+                elif pattern[i:i+4] == '(?P<':
                     # Named group: (?P<name>
-                    m = re.match(r'\(\?P<[^>]+>', pattern[i:])
-                    if m:
-                        group_str = m.group(0)
+                    start = i
+                    j = i+4
+                    while j < length and pattern[j] != '>':
+                        j += 1
+                    if j < length and pattern[j] == '>':
+                        group_str = pattern[start:j+1]
                         tokens.append(RegexToken(type='GROUP_NAMED', value=group_str))
-                        i += len(group_str)
+                        i = j+1  # Advance index to after the closing '>'
                     else:
                         tokens.append(RegexToken(type='GROUP_OPEN', value='('))
                         i += 1
