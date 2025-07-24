@@ -25,10 +25,33 @@ class RegexTester:
             if m:
                 longest = i
         if longest > 0:
+            # For literal patterns, find the first index where test_string and pattern differ
+            failed_at = None
+            for i, (c1, c2) in enumerate(zip(pattern, test_string)):
+                if c1 != c2:
+                    failed_at = i
+                    break
+            if failed_at is None:
+                # If one is a prefix of the other
+                failed_at = min(len(pattern), len(test_string))
+            reason = (
+                f"Match failed at position {failed_at}: unexpected character '{test_string[failed_at]}'"
+                if failed_at < len(test_string)
+                else "String too short."
+            )
+            # partial_matches should be the matching prefix up to 'longest'
             return MatchResult(
                 matches=False,
-                reason=f"Match failed at position {longest}: unexpected character '{test_string[longest]}'" if longest < len(test_string) else "String too short.",
-                failed_at=longest,
+                reason=reason,
+                failed_at=failed_at,
                 partial_matches=[test_string[:longest]]
             )
-        return MatchResult(matches=False, reason="No match at all.", failed_at=0, partial_matches=[])
+        # If no prefix matches, find the first index where the pattern and string differ
+        failed_at = 0
+        for i, (c1, c2) in enumerate(zip(pattern, test_string)):
+            if c1 != c2:
+                failed_at = i
+                break
+        else:
+            failed_at = min(len(pattern), len(test_string))
+        return MatchResult(matches=False, reason="No match at all.", failed_at=failed_at, partial_matches=[])

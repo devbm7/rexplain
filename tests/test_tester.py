@@ -25,6 +25,7 @@ def test_partial_match():
     tester = RegexTester()
     result = tester.test('abc', 'abx')
     print('DEBUG: failed_at =', result.failed_at)
+    print('DEBUG: partial_matches =', result.partial_matches)
     assert result.matches is False
     assert result.failed_at == 2
     assert result.partial_matches == ['ab']
