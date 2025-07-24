@@ -28,6 +28,8 @@ class Group(RegexAST):
     group_type: str  # 'capturing', 'noncap', 'named', 'lookahead', etc.
     children: List[RegexAST]
     name: Optional[str] = None  # For named groups
+    flags: Optional[str] = None  # For inline/scoped flags
+    condition: Optional[str] = None  # For conditional expressions
 
 @dataclass
 class Quantifier(RegexAST):
@@ -96,7 +98,14 @@ class RegexParser:
         tok = self._peek()
         if tok and tok.type == 'QUANTIFIER':
             quant_tok = self._advance()
-            return Quantifier(atom, quant_tok.value)
+            # Check for non-greedy quantifier (e.g., *?, +?, ??, {n,m}?)
+            next_tok = self._peek()
+            if next_tok and next_tok.type == 'SPECIAL' and next_tok.value == '?':
+                self._advance()
+                quant_str = quant_tok.value + '?'
+            else:
+                quant_str = quant_tok.value
+            return Quantifier(atom, quant_str)
         return atom
 
     def _parse_atom(self):
@@ -132,6 +141,27 @@ class RegexParser:
         tok = self._advance()
         group_type = tok.type
         name = None
+        flags = None
+        condition = None
+        # Inline flags: (?i), (?m), (?s), or scoped flags (?i:...)
+        if group_type == 'GROUP_OPEN' and self._peek() and self._peek().type == 'SPECIAL' and self._peek().value == '?':
+            # Look for inline flags or conditional
+            self._advance()  # skip '?'
+            flag_str = ''
+            while self._peek() and self._peek().type == 'LITERAL' and self._peek().value in 'imsxauL':
+                flag_str += self._advance().value
+            if self._peek() and self._peek().type == 'SPECIAL' and self._peek().value == ':':
+                self._advance()  # skip ':'
+                flags = flag_str
+                group_type = 'GROUP_FLAGS'
+            elif self._peek() and self._peek().type == 'LITERAL' and self._peek().value == ')':
+                self._advance()  # skip ')'
+                return Group('GROUP_FLAGS', [], None, flags=flag_str)
+            else:
+                # Could be a conditional expression (?a)...
+                if self._peek() and self._peek().type == 'LITERAL':
+                    condition = flag_str + self._advance().value
+                    group_type = 'GROUP_CONDITIONAL'
         if group_type == 'GROUP_NAMED':
             # Extract group name from value, e.g., (?P<name>
             import re
@@ -143,7 +173,7 @@ class RegexParser:
         if self._peek() and self._peek().type == 'GROUP_CLOSE':
             # Empty group: () or (?:)
             self._advance()  # consume ')'
-            return Group(group_type, children, name)
+            return Group(group_type, children, name, flags, condition)
         while self._peek() and not (self._peek().type == 'GROUP_CLOSE'):
             children.append(self._parse_alternation())
         if self._peek() and self._peek().type == 'GROUP_CLOSE':
@@ -151,14 +181,14 @@ class RegexParser:
         else:
             # Unclosed group
             raise ValueError('Unclosed group: missing )')
-        return Group(group_type, children, name)
+        return Group(group_type, children, name, flags, condition)
 
     def tokenize(self, pattern: str, flags: int = 0) -> List['RegexToken']:
         """Tokenize a regex pattern string into RegexToken objects, including character classes and groups. Optionally takes re flags (default: 0)."""
         tokens: List[RegexToken] = []
         i = 0
         special_chars = {'.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '^', '$'}
-        escape_sequences = {'d', 'w', 's', 'D', 'W', 'S', 'b', 'B', 'A', 'Z', 'G', 'n', 'r', 't', 'v', 'f', '\\'}
+        escape_sequences = {'d', 'w', 's', 'D', 'W', 'S', 'b', 'B', 'A', 'Z', 'G', 'n', 'r', 't', 'v', 'f', '\\', 'u', 'x', 'N'}
         length = len(pattern)
         while i < length:
             c = pattern[i]
@@ -210,6 +240,23 @@ class RegexParser:
                 elif pattern[i:i+5] == '(?<!':
                     tokens.append(RegexToken(type='GROUP_NEG_LOOKBEHIND', value='(?<!'))
                     i += 5
+                # Inline flags or conditional expressions
+                elif pattern[i:i+2] == '(?':
+                    # Could be inline flags, scoped flags, or conditional
+                    j = i+2
+                    flag_str = ''
+                    while j < length and pattern[j] in 'imsxauL':
+                        flag_str += pattern[j]
+                        j += 1
+                    if j < length and pattern[j] == ':':
+                        tokens.append(RegexToken(type='GROUP_FLAGS', value=pattern[i:j+1]))
+                        i = j+1
+                    elif j < length and pattern[j] == ')':
+                        tokens.append(RegexToken(type='GROUP_FLAGS', value=pattern[i:j+1]))
+                        i = j+1
+                    else:
+                        tokens.append(RegexToken(type='GROUP_OPEN', value='('))
+                        i += 1
                 else:
                     tokens.append(RegexToken(type='GROUP_OPEN', value='('))
                     i += 1
@@ -225,12 +272,34 @@ class RegexParser:
                 if i < length and pattern[i] == '}':
                     i += 1
                 tokens.append(RegexToken(type='QUANTIFIER', value=pattern[start:i]))
-            # Escape sequences
+            # Escape sequences (including Unicode/ASCII/Named)
             elif c == '\\':
                 if i + 1 < length:
                     next_c = pattern[i+1]
-                    tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
-                    i += 2
+                    if next_c in escape_sequences:
+                        # Unicode: \uXXXX, ASCII: \xXX, Named: \N{...}
+                        if next_c == 'u' and i+5 < length:
+                            tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+6]))
+                            i += 6
+                        elif next_c == 'x' and i+3 < length:
+                            tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+4]))
+                            i += 4
+                        elif next_c == 'N' and i+2 < length and pattern[i+2] == '{':
+                            j = i+3
+                            while j < length and pattern[j] != '}':
+                                j += 1
+                            if j < length and pattern[j] == '}':
+                                tokens.append(RegexToken(type='ESCAPE', value=pattern[i:j+1]))
+                                i = j+1
+                            else:
+                                tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
+                                i += 2
+                        else:
+                            tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
+                            i += 2
+                    else:
+                        tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
+                        i += 2
                 else:
                     tokens.append(RegexToken(type='ESCAPE', value=c))
                     i += 1
