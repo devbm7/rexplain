@@ -145,7 +145,7 @@ def _quantifier_explanation(quant: str) -> str:
 
 
 def explain(ast: RegexAST) -> str:
-    """
+    r"""
     Return a line-by-line, context-aware explanation of the regex AST.
 
     Args:
@@ -162,7 +162,7 @@ class RegexExplainer:
     Provides human-readable explanations for regex patterns.
     """
     def explain(self, pattern: str, flags: int = 0) -> str:
-        """
+        r"""
         Explain a regex pattern as a formatted, line-by-line string.
 
         Args:

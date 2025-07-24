@@ -5,7 +5,7 @@ from .core.generator import ExampleGenerator
 from .core.tester import RegexTester
 
 def explain(pattern: str, flags: int = 0) -> str:
-    """
+    r"""
     Explain what a regex pattern does, line by line.
 
     Args:
@@ -23,7 +23,7 @@ def explain(pattern: str, flags: int = 0) -> str:
 
 
 def examples(pattern: str, count: int = 3, flags: int = 0):
-    """
+    r"""
     Generate example strings that match the regex pattern.
 
     Args:
@@ -42,7 +42,7 @@ def examples(pattern: str, count: int = 3, flags: int = 0):
 
 
 def test(pattern: str, test_string: str, flags: int = 0):
-    """
+    r"""
     Test if a string matches a regex pattern and explain why/why not.
 
     Args:

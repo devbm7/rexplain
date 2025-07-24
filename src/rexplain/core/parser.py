@@ -75,7 +75,7 @@ class RegexParser:
     Parses a regex string into an abstract syntax tree (AST).
     """
     def parse(self, pattern: str, flags: int = 0) -> RegexAST:
-        """
+        r"""
         Parse a regex pattern string into an AST.
 
         Args:
@@ -229,7 +229,7 @@ class RegexParser:
         return Group(group_type, children, name, flags, condition)
 
     def tokenize(self, pattern: str, flags: int = 0) -> List['RegexToken']:
-        """
+        r"""
         Tokenize a regex pattern string into RegexToken objects, including character classes and groups.
 
         Args:
