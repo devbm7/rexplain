@@ -106,7 +106,7 @@ def explain(ast: RegexAST) -> str:
         return f"an unknown regex construct: {ast}"
 
 class RegexExplainer:
-    def explain(self, pattern: str) -> str:
+    def explain(self, pattern: str, flags: int = 0) -> str:
         from .parser import RegexParser
-        ast = RegexParser().parse(pattern)
+        ast = RegexParser().parse(pattern, flags=flags)
         return explain(ast)

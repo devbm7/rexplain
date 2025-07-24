@@ -51,12 +51,24 @@ def test_regex_features():
     assert result.matches is True
     print('test_regex_features passed')
 
+def test_flag_sensitive_match():
+    import re
+    tester = RegexTester()
+    # Without IGNORECASE, should not match
+    result = tester.test('abc', 'ABC')
+    assert result.matches is False
+    # With IGNORECASE, should match
+    result = tester.test('abc', 'ABC', flags=re.IGNORECASE)
+    assert result.matches is True
+    print('test_flag_sensitive_match passed')
+
 def main():
     test_full_match()
     test_no_match()
     test_partial_match()
     test_too_short()
     test_regex_features()
+    test_flag_sensitive_match()
     print('All tester tests passed!')
 
 if __name__ == '__main__':

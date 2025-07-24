@@ -13,8 +13,8 @@ class RegexTester:
     """
     Test if a string matches a regex pattern and provide detailed feedback.
     """
-    def test(self, pattern: str, test_string: str) -> MatchResult:
-        prog = re.compile(pattern)
+    def test(self, pattern: str, test_string: str, flags: int = 0) -> MatchResult:
+        prog = re.compile(pattern, flags)
         m = prog.fullmatch(test_string)
         if m:
             return MatchResult(matches=True, reason="Full match.")

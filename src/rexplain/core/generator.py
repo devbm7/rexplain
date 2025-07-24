@@ -11,11 +11,11 @@ class ExampleGenerator:
         # For negated char classes, pick from this set
         self.default_charset = [chr(i) for i in range(32, 127)]
 
-    def generate(self, pattern: str, count: int = 3) -> List[str]:
+    def generate(self, pattern: str, count: int = 3, flags: int = 0) -> List[str]:
         """
         Generate a list of example strings that match the given regex pattern.
         """
-        ast = self.parser.parse(pattern)
+        ast = self.parser.parse(pattern, flags=flags)
         return [self._generate_from_ast(ast) for _ in range(count)]
 
     def _generate_from_ast(self, ast: RegexAST) -> str:
