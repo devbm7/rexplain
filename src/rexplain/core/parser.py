@@ -69,8 +69,12 @@ class RegexParser:
                 else:
                     ast_nodes.append(Literal(token.value))
             elif token.type == 'QUANTIFIER':
-                # For MVP, treat as literal (real quantifier handling needs context)
-                ast_nodes.append(Quantifier(Literal(''), token.value))
+                # Attach quantifier to previous node if possible
+                if ast_nodes:
+                    prev = ast_nodes.pop()
+                    ast_nodes.append(Quantifier(prev, token.value))
+                else:
+                    ast_nodes.append(Quantifier(Literal(''), token.value))
             elif token.type.startswith('GROUP_'):
                 ast_nodes.append(Group(token.type, [], None))
             else:

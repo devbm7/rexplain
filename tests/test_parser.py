@@ -96,7 +96,28 @@ def test_tokenize_lookbehind():
     ]
     assert tokens == expected, f"Expected {expected}, got {tokens}"
 
-if __name__ == '__main__':
+def test_parse_flat_ast():
+    from rexplain.core.parser import RegexParser, Sequence, Literal, CharClass, Escape, Anchor, Quantifier, Group
+    parser = RegexParser()
+    pattern = r'a[0-9]\d^$*'
+    ast = parser.parse(pattern)
+    # For MVP, quantifier and group are not context-aware, so '*' is Quantifier(Literal(''), '*')
+    expected = Sequence([
+        Literal('a'),
+        CharClass('[0-9]'),
+        Escape(r'\d'),
+        Anchor('^'),
+        Anchor('$'),
+        Quantifier(Literal(''), '*'),
+    ])
+    # Compare types and values for each node in sequence
+    assert isinstance(ast, Sequence), f"Expected Sequence, got {type(ast)}"
+    assert len(ast.elements) == len(expected.elements), f"Expected {len(expected.elements)} elements, got {len(ast.elements)}"
+    for node, exp in zip(ast.elements, expected.elements):
+        assert type(node) == type(exp), f"Expected node type {type(exp)}, got {type(node)}"
+        assert getattr(node, 'value', getattr(node, 'quant', None)) == getattr(exp, 'value', getattr(exp, 'quant', None)), f"Expected value {getattr(exp, 'value', getattr(exp, 'quant', None))}, got {getattr(node, 'value', getattr(node, 'quant', None))}"
+
+def main():
     test_tokenize_basic()
     print('test_tokenize_basic passed')
     test_tokenize_char_class()
@@ -111,4 +132,9 @@ if __name__ == '__main__':
     print('test_tokenize_lookahead passed')
     test_tokenize_lookbehind()
     print('test_tokenize_lookbehind passed')
-    print('All tests passed!') 
+    test_parse_flat_ast()
+    print('test_parse_flat_ast passed')
+    print('All tests passed!')
+
+if __name__ == '__main__':
+    main() 
