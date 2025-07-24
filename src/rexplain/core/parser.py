@@ -51,14 +51,14 @@ class Quantifier(RegexAST):
 
 @dataclass
 class Anchor(RegexAST):
-    """
+    r"""
     Represents anchors like ^, $, \b, etc.
     """
     value: str
 
 @dataclass
 class Escape(RegexAST):
-    """
+    r"""
     Represents escape sequences like \d, \w, etc.
     """
     value: str

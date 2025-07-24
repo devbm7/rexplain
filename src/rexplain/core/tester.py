@@ -92,12 +92,14 @@ class RegexTester:
                     import re as _re
                     esc = node.value
                     esc_re = _re.compile(esc)
+                    # Show the escape as written in the pattern (single backslash)
+                    display_esc = esc.encode('utf-8').decode('unicode_escape') if esc.startswith('\\') else esc
                     if esc_re.fullmatch(c):
-                        details.append(f"{c!r} matches escape {esc} at position {j}")
+                        details.append(f"{c!r} matches escape {display_esc} at position {j}")
                         i += 1
                         j += 1
                     else:
-                        reason = (f"Failed at position {j}: expected {esc}, got '{c}'")
+                        reason = (f"Failed at position {j}: expected {display_esc}, got '{c}'")
                         return MatchResult(
                             matches=False,
                             reason=reason,

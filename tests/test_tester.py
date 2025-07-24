@@ -19,6 +19,8 @@ def test_no_match():
     assert result.matches is False
     assert result.failed_at == 0
     assert result.partial_matches == []
+    # Should mention expected literal and got
+    assert 'expected literal' in result.reason and 'got' in result.reason
     print('test_no_match passed')
 
 def test_partial_match():
@@ -29,7 +31,8 @@ def test_partial_match():
     assert result.matches is False
     assert result.failed_at == 2
     assert result.partial_matches == ['ab']
-    assert 'unexpected character' in result.reason or 'failed at position' in result.reason
+    # Should mention expected literal and got
+    assert 'expected literal' in result.reason and 'got' in result.reason
     print('test_partial_match passed')
     
 def test_too_short():
@@ -38,8 +41,51 @@ def test_too_short():
     assert result.matches is False
     assert result.failed_at == 2
     assert result.partial_matches == ['ab']
-    assert 'too short' in result.reason or 'failed at position' in result.reason
+    # Should mention string too short or expected more input
+    assert 'too short' in result.reason or 'expected more input' in result.reason
     print('test_too_short passed')
+
+def test_charclass_fail():
+    tester = RegexTester()
+    result = tester.test(r'[0-9][a-z][A-Z]', '1a!')
+    assert result.matches is False
+    assert result.failed_at == 2
+    assert 'expected character in [A-Z]' in result.reason and 'got' in result.reason
+    print('test_charclass_fail passed')
+
+def test_escape_fail():
+    tester = RegexTester()
+    # \d
+    result = tester.test(r'\d', 'a')
+    assert result.matches is False
+    assert result.failed_at == 0
+    assert r'expected \d' in result.reason and 'got' in result.reason
+    # \w
+    result = tester.test(r'\w', '!')
+    assert result.matches is False
+    assert result.failed_at == 0
+    assert r'expected \w' in result.reason and 'got' in result.reason
+    # \s
+    result = tester.test(r'\s', 'A')
+    assert result.matches is False
+    assert result.failed_at == 0
+    assert r'expected \s' in result.reason and 'got' in result.reason
+    # \D
+    result = tester.test(r'\D', '5')
+    assert result.matches is False
+    assert result.failed_at == 0
+    assert r'expected \D' in result.reason and 'got' in result.reason
+    # \S
+    result = tester.test(r'\S', ' ')
+    assert result.matches is False
+    assert result.failed_at == 0
+    assert r'expected \S' in result.reason and 'got' in result.reason
+    # \W
+    result = tester.test(r'\W', 'a')
+    assert result.matches is False
+    assert result.failed_at == 0
+    assert r'expected \W' in result.reason and 'got' in result.reason
+    print('test_escape_fail passed')
 
 def test_regex_features():
     tester = RegexTester()
@@ -67,6 +113,8 @@ def main():
     test_no_match()
     test_partial_match()
     test_too_short()
+    test_charclass_fail()
+    test_escape_fail()
     test_regex_features()
     test_flag_sensitive_match()
     print('All tester tests passed!')
