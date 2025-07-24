@@ -1,5 +1,6 @@
 from typing import List
 from dataclasses import dataclass
+import re
 
 @dataclass
 class RegexToken:
@@ -18,29 +19,86 @@ class RegexParser:
         pass
 
     def tokenize(self, pattern: str) -> List[RegexToken]:
-        """Tokenize a regex pattern string into RegexToken objects"""
+        """Tokenize a regex pattern string into RegexToken objects, including character classes and groups."""
         tokens: List[RegexToken] = []
         i = 0
         special_chars = {'.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '^', '$'}
         escape_sequences = {'d', 'w', 's', 'D', 'W', 'S', 'b', 'B', 'A', 'Z', 'G', 'n', 'r', 't', 'v', 'f', '\\'}
-        while i < len(pattern):
+        length = len(pattern)
+        while i < length:
             c = pattern[i]
-            if c == '\\':
-                # Handle escape sequence
-                if i + 1 < len(pattern):
-                    next_c = pattern[i+1]
-                    if next_c in escape_sequences:
-                        tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
-                        i += 2
+            # Character class
+            if c == '[':
+                start = i
+                i += 1
+                in_escape = False
+                while i < length:
+                    if not in_escape and pattern[i] == ']':
+                        i += 1
+                        break
+                    if pattern[i] == '\\' and not in_escape:
+                        in_escape = True
+                        i += 1
                     else:
-                        tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
-                        i += 2
+                        in_escape = False
+                        i += 1
+                tokens.append(RegexToken(type='CHAR_CLASS', value=pattern[start:i]))
+            # Group constructs
+            elif c == '(':
+                if pattern[i:i+3] == '(?:':
+                    tokens.append(RegexToken(type='GROUP_NONCAP', value='(?:'))
+                    i += 3
+                elif pattern[i:i+4] == '(?P':
+                    # Named group: (?P<name>
+                    m = re.match(r'\(\?P<[^>]+>', pattern[i:])
+                    if m:
+                        group_str = m.group(0)
+                        tokens.append(RegexToken(type='GROUP_NAMED', value=group_str))
+                        i += len(group_str)
+                    else:
+                        tokens.append(RegexToken(type='GROUP_OPEN', value='('))
+                        i += 1
+                elif pattern[i:i+3] == '(?=':
+                    tokens.append(RegexToken(type='GROUP_LOOKAHEAD', value='(?='))
+                    i += 3
+                elif pattern[i:i+4] == '(?!':
+                    tokens.append(RegexToken(type='GROUP_NEG_LOOKAHEAD', value='(?!'))
+                    i += 4
+                elif pattern[i:i+4] == '(?<=':
+                    tokens.append(RegexToken(type='GROUP_LOOKBEHIND', value='(?<='))
+                    i += 4
+                elif pattern[i:i+5] == '(?<!':
+                    tokens.append(RegexToken(type='GROUP_NEG_LOOKBEHIND', value='(?<!'))
+                    i += 5
+                else:
+                    tokens.append(RegexToken(type='GROUP_OPEN', value='('))
+                    i += 1
+            elif c == ')':
+                tokens.append(RegexToken(type='GROUP_CLOSE', value=')'))
+                i += 1
+            # Quantifier braces
+            elif c == '{':
+                start = i
+                i += 1
+                while i < length and pattern[i] != '}':
+                    i += 1
+                if i < length and pattern[i] == '}':
+                    i += 1
+                tokens.append(RegexToken(type='QUANTIFIER', value=pattern[start:i]))
+            # Escape sequences
+            elif c == '\\':
+                if i + 1 < length:
+                    next_c = pattern[i+1]
+                    tokens.append(RegexToken(type='ESCAPE', value=pattern[i:i+2]))
+                    i += 2
                 else:
                     tokens.append(RegexToken(type='ESCAPE', value=c))
                     i += 1
+            # Specials
             elif c in special_chars:
                 tokens.append(RegexToken(type='SPECIAL', value=c))
                 i += 1
+            # Literals
             else:
                 tokens.append(RegexToken(type='LITERAL', value=c))
                 i += 1
