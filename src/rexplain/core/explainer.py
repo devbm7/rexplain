@@ -104,3 +104,9 @@ def explain(ast: RegexAST) -> str:
             return f"{desc} (empty)"
     else:
         return f"an unknown regex construct: {ast}"
+
+class RegexExplainer:
+    def explain(self, pattern: str) -> str:
+        from .parser import RegexParser
+        ast = RegexParser().parse(pattern)
+        return explain(ast)

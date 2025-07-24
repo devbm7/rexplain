@@ -6,7 +6,8 @@ try:
     from rexplain.core.explainer import RegexExplainer
     from rexplain.core.generator import ExampleGenerator
     from rexplain.core.tester import RegexTester
-except ImportError:
+except ImportError as e:
+    print("IMPORT ERROR:", e, file=sys.stderr)
     # Stubs for development if core modules are missing
     class RegexExplainer:
         def explain(self, pattern):
