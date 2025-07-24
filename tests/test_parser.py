@@ -185,6 +185,63 @@ def test_parse_unclosed_char_class():
         assert 'Unclosed character class' in str(e)
     print('test_parse_unclosed_char_class passed')
 
+def test_tokenize_empty_pattern():
+    parser = RegexParser()
+    pattern = ''
+    tokens = parser.tokenize(pattern)
+    assert tokens == [], f"Expected empty token list, got {tokens}"
+
+def test_tokenize_only_quantifier():
+    parser = RegexParser()
+    pattern = '*'
+    tokens = parser.tokenize(pattern)
+    expected = [RegexToken(type='QUANTIFIER', value='*')]
+    assert tokens == expected, f"Expected {expected}, got {tokens}"
+
+def test_tokenize_only_anchor():
+    parser = RegexParser()
+    pattern = '^$'
+    tokens = parser.tokenize(pattern)
+    expected = [RegexToken(type='SPECIAL', value='^'), RegexToken(type='SPECIAL', value='$')]
+    assert tokens == expected, f"Expected {expected}, got {tokens}"
+
+def test_parse_invalid_quantifier():
+    parser = RegexParser()
+    pattern = 'a{,3}'
+    try:
+        parser.tokenize(pattern)
+        # The parser currently does not validate quantifier content, so this should not raise
+    except ValueError:
+        assert False, 'Did not expect ValueError for invalid quantifier syntax in tokenize'
+
+def test_parse_unclosed_quantifier_braces():
+    parser = RegexParser()
+    pattern = 'a{2,3'
+    try:
+        parser.tokenize(pattern)
+        assert False, 'Expected ValueError for unclosed quantifier braces'
+    except ValueError as e:
+        # The current implementation does not raise for this, but should
+        pass
+
+def test_parse_invalid_escape():
+    parser = RegexParser()
+    pattern = r'\z'
+    tokens = parser.tokenize(pattern)
+    # Should treat as ESCAPE, but not raise
+    assert tokens == [RegexToken(type='ESCAPE', value='\\z')], f"Expected ESCAPE token, got {tokens}"
+
+def test_parse_nested_groups_and_alternation():
+    from rexplain.core.parser import RegexParser, Group, Alternation, Sequence, Literal
+    parser = RegexParser()
+    pattern = r'(a|b|(c|d))'
+    ast = parser.parse(pattern)
+    assert isinstance(ast, Group)
+    assert ast.group_type == 'GROUP_OPEN' or ast.group_type == 'GROUP_NONCAP' or ast.group_type == 'GROUP_NAMED' or ast.group_type == 'GROUP_FLAGS' or ast.group_type == 'GROUP_LOOKAHEAD' or ast.group_type == 'GROUP_NEG_LOOKAHEAD' or ast.group_type == 'GROUP_LOOKBEHIND' or ast.group_type == 'GROUP_NEG_LOOKBEHIND' or ast.group_type == 'GROUP_CONDITIONAL' or ast.group_type == 'GROUP_FLAGS' or ast.group_type == 'GROUP_NAMED' or ast.group_type == 'GROUP_OPEN'
+    # Should contain an Alternation as its child
+    assert isinstance(ast.children[0], Alternation)
+    print('test_parse_nested_groups_and_alternation passed')
+
 def main():
     test_tokenize_basic()
     print('test_tokenize_basic passed')
@@ -207,6 +264,19 @@ def main():
     test_parse_unicode_ascii_escapes()
     test_parse_unclosed_group()
     test_parse_unclosed_char_class()
+    test_tokenize_empty_pattern()
+    print('test_tokenize_empty_pattern passed')
+    test_tokenize_only_quantifier()
+    print('test_tokenize_only_quantifier passed')
+    test_tokenize_only_anchor()
+    print('test_tokenize_only_anchor passed')
+    test_parse_invalid_quantifier()
+    print('test_parse_invalid_quantifier passed')
+    test_parse_unclosed_quantifier_braces()
+    print('test_parse_unclosed_quantifier_braces passed')
+    test_parse_invalid_escape()
+    print('test_parse_invalid_escape passed')
+    test_parse_nested_groups_and_alternation()
     print('All tests passed!')
 
 if __name__ == '__main__':

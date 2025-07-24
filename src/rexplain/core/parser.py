@@ -223,7 +223,7 @@ class RegexParser:
                     else:
                         in_escape = False
                         i += 1
-                if i > length:
+                if i > length or (i == length and (length == 0 or pattern[i-1] != ']')):
                     raise ValueError('Unclosed character class: missing ]')
                 tokens.append(RegexToken(type='CHAR_CLASS', value=pattern[start:i]))
             # Group constructs
@@ -287,6 +287,8 @@ class RegexParser:
                     i += 1
                 if i < length and pattern[i] == '}':
                     i += 1
+                else:
+                    raise ValueError('Unclosed quantifier braces: missing }')
                 tokens.append(RegexToken(type='QUANTIFIER', value=pattern[start:i]))
             # Quantifiers *, +, ?
             elif c in {'*', '+', '?'}:
