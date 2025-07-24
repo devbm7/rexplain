@@ -55,31 +55,103 @@ class RegexParser:
     def parse(self, pattern: str, flags: int = 0) -> RegexAST:
         """Parse a regex pattern string into an AST. Optionally takes re flags (default: 0)."""
         tokens = self.tokenize(pattern, flags)
-        ast_nodes = []
-        for token in tokens:
-            if token.type == 'LITERAL':
-                ast_nodes.append(Literal(token.value))
-            elif token.type == 'CHAR_CLASS':
-                ast_nodes.append(CharClass(token.value))
-            elif token.type == 'ESCAPE':
-                ast_nodes.append(Escape(token.value))
-            elif token.type == 'SPECIAL':
-                if token.value in {'^', '$'}:
-                    ast_nodes.append(Anchor(token.value))
-                else:
-                    ast_nodes.append(Literal(token.value))
-            elif token.type == 'QUANTIFIER':
-                # Attach quantifier to previous node if possible
-                if ast_nodes:
-                    prev = ast_nodes.pop()
-                    ast_nodes.append(Quantifier(prev, token.value))
-                else:
-                    ast_nodes.append(Quantifier(Literal(''), token.value))
-            elif token.type.startswith('GROUP_'):
-                ast_nodes.append(Group(token.type, [], None))
+        self._tokens = tokens
+        self._pos = 0
+        ast = self._parse_alternation()
+        return ast
+
+    def _peek(self):
+        if self._pos < len(self._tokens):
+            return self._tokens[self._pos]
+        return None
+
+    def _advance(self):
+        tok = self._peek()
+        if tok:
+            self._pos += 1
+        return tok
+
+    def _parse_alternation(self):
+        options = [self._parse_sequence()]
+        while self._peek() and self._peek().type == 'SPECIAL' and self._peek().value == '|':
+            self._advance()  # skip '|'
+            options.append(self._parse_sequence())
+        if len(options) == 1:
+            return options[0]
+        return Alternation(options)
+
+    def _parse_sequence(self):
+        elements = []
+        while True:
+            tok = self._peek()
+            if tok is None or (tok.type == 'SPECIAL' and tok.value in '|)'):
+                break
+            elements.append(self._parse_quantifier())
+        if len(elements) == 1:
+            return elements[0]
+        return Sequence(elements)
+
+    def _parse_quantifier(self):
+        atom = self._parse_atom()
+        tok = self._peek()
+        if tok and tok.type == 'QUANTIFIER':
+            quant_tok = self._advance()
+            return Quantifier(atom, quant_tok.value)
+        return atom
+
+    def _parse_atom(self):
+        tok = self._peek()
+        if tok is None:
+            return None
+        # Escaped metacharacters as literals
+        if tok.type == 'ESCAPE':
+            # If it's an escaped metacharacter, treat as Literal
+            metachars = {'.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '^', '$', '\\'}
+            if len(tok.value) == 2 and tok.value[1] in metachars:
+                self._advance()
+                return Literal(tok.value[1])
             else:
-                ast_nodes.append(Literal(token.value))
-        return Sequence(ast_nodes)
+                self._advance()
+                return Escape(tok.value)
+        elif tok.type == 'LITERAL':
+            self._advance()
+            return Literal(tok.value)
+        elif tok.type == 'CHAR_CLASS':
+            self._advance()
+            return CharClass(tok.value)
+        elif tok.type == 'SPECIAL' and tok.value in {'^', '$'}:
+            self._advance()
+            return Anchor(tok.value)
+        elif tok.type.startswith('GROUP_'):
+            return self._parse_group()
+        else:
+            self._advance()
+            return Literal(tok.value)
+
+    def _parse_group(self):
+        tok = self._advance()
+        group_type = tok.type
+        name = None
+        if group_type == 'GROUP_NAMED':
+            # Extract group name from value, e.g., (?P<name>
+            import re
+            m = re.match(r'\(\?P<([^>]+)>', tok.value)
+            if m:
+                name = m.group(2)
+        children = []
+        # Parse group contents until closing paren
+        if self._peek() and self._peek().type == 'GROUP_CLOSE':
+            # Empty group: () or (?:)
+            self._advance()  # consume ')'
+            return Group(group_type, children, name)
+        while self._peek() and not (self._peek().type == 'GROUP_CLOSE'):
+            children.append(self._parse_alternation())
+        if self._peek() and self._peek().type == 'GROUP_CLOSE':
+            self._advance()  # consume ')'
+        else:
+            # Unclosed group
+            raise ValueError('Unclosed group: missing )')
+        return Group(group_type, children, name)
 
     def tokenize(self, pattern: str, flags: int = 0) -> List['RegexToken']:
         """Tokenize a regex pattern string into RegexToken objects, including character classes and groups. Optionally takes re flags (default: 0)."""
@@ -105,6 +177,8 @@ class RegexParser:
                     else:
                         in_escape = False
                         i += 1
+                if i > length:
+                    raise ValueError('Unclosed character class: missing ]')
                 tokens.append(RegexToken(type='CHAR_CLASS', value=pattern[start:i]))
             # Group constructs
             elif c == '(':
