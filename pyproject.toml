@@ -6,14 +6,11 @@ build-backend = "hatchling.build"
 name = "rexplain"
 dynamic = ["version"]
 description = "Explain, test, and generate examples for regular expressions"
-authors = [{name = "Dev Makwana", email = "devmakwana7704@gmail.com"}]
-author = "Dev Makwana"
-author-email = "devmakwana7704@gmail.com"
+authors = [
+    { name = "Dev Makwana", email = "devmakwana7704@gmail.com" },
+]
 license = {text = "MIT"}
 readme = "README.md"
-urls = {
-    "Homepage": "https://www.github.com/devbm7/rexplain"
-}
 requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -26,9 +23,10 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
+urls = { "Repository" = "https://github.com/devbm7/rexplain" }
 
 [project.scripts]
 rexplain = "rexplain.cli.main:main"
 
 [tool.hatch.version]
-path = "src/rexplain/__init__.py" 
+path = "src/rexplain/__init__.py"
