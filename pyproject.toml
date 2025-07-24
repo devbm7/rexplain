@@ -6,14 +6,12 @@ build-backend = "hatchling.build"
 name = "rexplain"
 dynamic = ["version"]
 description = "Explain, test, and generate examples for regular expressions"
-authors = [
-    { name = "Dev Makwana", email = "devmakwana7704@gmail.com" },
-]
+authors = [{name = "Dev B. Makwana"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
