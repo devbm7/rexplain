@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Tuple
 from .parser import RegexParser, RegexAST, Literal, CharClass, Escape, Quantifier, Anchor, Sequence, Alternation, Group
 
 class ExampleGenerator:
@@ -79,7 +79,7 @@ class ExampleGenerator:
         else:
             return ''
 
-    def _parse_char_class(self, class_str: str) -> (List[str], bool):
+    def _parse_char_class(self, class_str: str) -> Tuple[List[str], bool]:
         # Enhanced char class parser: supports negation and ranges
         chars = []
         negated = False
@@ -100,7 +100,7 @@ class ExampleGenerator:
                     i += 1
         return chars, negated
 
-    def _parse_quant(self, quant: str) -> (int, int):
+    def _parse_quant(self, quant: str) -> Tuple[int, int]:
         # Returns (min, max) for quantifier
         if quant == '*':
             return (0, 4)
