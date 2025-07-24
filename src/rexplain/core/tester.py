@@ -19,12 +19,13 @@ class RegexTester:
         if m:
             return MatchResult(matches=True, reason="Full match.")
         # Try to find the longest matching prefix
-        for i in range(len(test_string), 0, -1):
-            if prog.match(test_string[:i]):
-                return MatchResult(
-                    matches=False,
-                    reason=f"Match failed at position {i}: unexpected character '{test_string[i]}'" if i < len(test_string) else "String too short.",
-                    failed_at=i,
-                    partial_matches=[test_string[:i]]
-                )
+        m = prog.match(test_string)
+        if m:
+            i = m.end()
+            return MatchResult(
+                matches=False,
+                reason=f"Match failed at position {i}: unexpected character '{test_string[i]}'" if i < len(test_string) else "String too short.",
+                failed_at=i,
+                partial_matches=[test_string[:i]]
+            )
         return MatchResult(matches=False, reason="No match at all.", failed_at=0, partial_matches=[])

@@ -24,12 +24,13 @@ def test_no_match():
 def test_partial_match():
     tester = RegexTester()
     result = tester.test('abc', 'abx')
+    print('DEBUG: failed_at =', result.failed_at)
     assert result.matches is False
     assert result.failed_at == 2
     assert result.partial_matches == ['ab']
     assert 'unexpected character' in result.reason or 'failed at position' in result.reason
     print('test_partial_match passed')
-
+    
 def test_too_short():
     tester = RegexTester()
     result = tester.test('abc', 'ab')
