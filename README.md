@@ -1,6 +1,7 @@
 # rexplain
 
 [![PyPI version](https://img.shields.io/pypi/v/rexplain.svg)](https://pypi.org/project/rexplain/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/rexplain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Explain, test, and generate examples for regular expressions.
