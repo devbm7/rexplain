@@ -1,5 +1,6 @@
 name: Deploy Docs
-
+env:
+  GH_TOKEN: ${{ secrets.GH_TOKEN }}
 on:
   push:
     branches: [main]
@@ -20,5 +21,3 @@ jobs:
       - name: Deploy to GitHub Pages
         run: |
           mkdocs gh-deploy --force 
-env:
-  GH_TOKEN: ${{ secrets.GH_TOKEN }}
