@@ -27,6 +27,9 @@ class ExampleGenerator:
             List[str]: Example strings matching the pattern.
         """
         ast = self.parser.parse(pattern, flags=flags)
+        # For alternations, try to cover all branches if possible
+        if isinstance(ast, Alternation) and count <= len(ast.options):
+            return [self._generate_from_ast(opt) for opt in ast.options[:count]]
         return [self._generate_from_ast(ast) for _ in range(count)]
 
     def _generate_from_ast(self, ast: RegexAST) -> str:
@@ -35,7 +38,6 @@ class ExampleGenerator:
         elif isinstance(ast, CharClass):
             chars, negated = self._parse_char_class(ast.value)
             if negated:
-                # Pick a character not in chars
                 candidates = [c for c in self.default_charset if c not in chars]
                 return random.choice(candidates) if candidates else '?'
             else:
@@ -43,18 +45,18 @@ class ExampleGenerator:
         elif isinstance(ast, Escape):
             # Map escapes to representative characters
             escape_map = {
-                r'\d': '5',
-                r'\w': 'a',
-                r'\s': ' ',
-                r'\D': 'X',
-                r'\W': '#',
-                r'\S': '_',
-                r'\\': '\\',
-                r'\n': '\n',
-                r'\t': '\t',
-                r'\r': '\r',
-                r'\b': '',  # word boundary, ignore in generation
-                r'\B': '',  # non-word boundary, ignore
+                r'\d': lambda: str(random.randint(0, 9)),
+                r'\w': lambda: random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'),
+                r'\s': lambda: random.choice([' ', '\t', '\n']),
+                r'\D': lambda: random.choice([c for c in self.default_charset if not c.isdigit()]),
+                r'\W': lambda: random.choice([c for c in self.default_charset if not (c.isalnum() or c == '_')]),
+                r'\S': lambda: random.choice([c for c in self.default_charset if not c.isspace()]),
+                r'\\': lambda: '\\',
+                r'\n': lambda: '\n',
+                r'\t': lambda: '\t',
+                r'\r': lambda: '\r',
+                r'\b': lambda: '',  # word boundary, ignore in generation
+                r'\B': lambda: '',  # non-word boundary, ignore
             }
             # Unicode/hex escapes
             if ast.value.startswith(r'\u') and len(ast.value) == 6:
@@ -69,9 +71,11 @@ class ExampleGenerator:
                     return chr(codepoint)
                 except Exception:
                     return '?'
-            return escape_map.get(ast.value, '?')
+            return escape_map.get(ast.value, lambda: '?')()
         elif isinstance(ast, Quantifier):
             min_n, max_n = self._parse_quant(ast.quant)
+            # For larger ranges, limit max_n for practicality
+            max_n = min(max_n, 8)
             n = random.randint(min_n, max_n)
             return ''.join(self._generate_from_ast(ast.child) for _ in range(n))
         elif isinstance(ast, Anchor):
@@ -86,6 +90,7 @@ class ExampleGenerator:
             return self._generate_from_ast(option)
         elif isinstance(ast, Group):
             # Recursively generate for each child (supports nested groups)
+            # For lookahead/lookbehind, just generate for children (basic support)
             return ''.join(self._generate_from_ast(child) for child in ast.children)
         else:
             return ''
