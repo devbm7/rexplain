@@ -93,3 +93,14 @@ Contributions are welcome! To contribute:
 ## License
 
 MIT
+
+## Running Tests & Coverage
+
+To run all tests with coverage (threshold: 90%):
+
+```bash
+pip install .[test]
+pytest
+```
+
+If coverage is below 90%, pytest will fail. Coverage details will be shown in the terminal.
