@@ -30,7 +30,23 @@ class ExampleGenerator:
         # For alternations, try to cover all branches if possible
         if isinstance(ast, Alternation) and count <= len(ast.options):
             return [self._generate_from_ast(opt) for opt in ast.options[:count]]
+        # Special handling for anchored patterns: only generate the exact match
+        if self._is_fully_anchored(ast):
+            return [self._generate_from_ast(ast)] * count
         return [self._generate_from_ast(ast) for _ in range(count)]
+
+    def _is_fully_anchored(self, ast: RegexAST) -> bool:
+        # Returns True if the pattern is ^...$ (fully anchored)
+        if isinstance(ast, Sequence):
+            elements = ast.elements
+            if len(elements) >= 2 and isinstance(elements[0], Anchor) and elements[0].value == '^' and \
+               isinstance(elements[-1], Anchor) and elements[-1].value == '$':
+                return True
+            if len(elements) == 1 and isinstance(elements[0], Anchor):
+                return True
+        if isinstance(ast, Anchor):
+            return True
+        return False
 
     def _generate_from_ast(self, ast: RegexAST) -> str:
         if isinstance(ast, Literal):
@@ -82,6 +98,12 @@ class ExampleGenerator:
             # Anchors do not produce characters
             return ''
         elif isinstance(ast, Sequence):
+            # If fully anchored, only generate the inner content
+            if self._is_fully_anchored(ast):
+                elements = ast.elements
+                # Remove ^ and $ anchors
+                inner = elements[1:-1]
+                return ''.join(self._generate_from_ast(e) for e in inner)
             # Recursively generate for each element
             return ''.join(self._generate_from_ast(e) for e in ast.elements)
         elif isinstance(ast, Alternation):
@@ -89,8 +111,10 @@ class ExampleGenerator:
             option = random.choice(ast.options)
             return self._generate_from_ast(option)
         elif isinstance(ast, Group):
+            # For lookahead/lookbehind, do not generate any characters
+            if ast.group_type in {'GROUP_LOOKAHEAD', 'GROUP_NEG_LOOKAHEAD', 'GROUP_LOOKBEHIND', 'GROUP_NEG_LOOKBEHIND'}:
+                return ''
             # Recursively generate for each child (supports nested groups)
-            # For lookahead/lookbehind, just generate for children (basic support)
             return ''.join(self._generate_from_ast(child) for child in ast.children)
         else:
             return ''

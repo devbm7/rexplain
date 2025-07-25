@@ -24,6 +24,9 @@ def test_char_class():
 
     pattern = '[^a-c]'
     examples = gen.generate(pattern, 10)
+    # Ensure no example is 'a', 'b', or 'c'
+    for ex in examples:
+        assert ex not in 'abc', f"Negated char class produced forbidden char: {ex}"
     assert_examples_match(pattern, examples)
 
 def test_escape():
@@ -31,21 +34,32 @@ def test_escape():
     pattern = r'\d\w\s'
     examples = gen.generate(pattern, 10)
     assert_examples_match(pattern, examples)
+    # Test all escapes
+    for pat in [r'\D', r'\W', r'\S', r'\n', r'\t', r'\r']:
+        examples = gen.generate(pat, 5)
+        assert_examples_match(pat, examples)
 
 def test_quantifier():
     gen = ExampleGenerator()
     pattern = 'a{2,4}'
     examples = gen.generate(pattern, 10)
     assert_examples_match(pattern, examples)
+    # Ensure all lengths in range are possible
+    lengths = set(len(ex) for ex in examples)
+    assert lengths.issubset({2, 3, 4}) and len(lengths) > 1
 
     pattern = 'b*'
     examples = gen.generate(pattern, 10)
     assert_examples_match(pattern, examples)
+    # Should include empty string
+    assert '' in examples
 
 def test_alternation():
     gen = ExampleGenerator()
-    pattern = 'foo|bar'
-    examples = gen.generate(pattern, 10)
+    pattern = 'foo|bar|baz'
+    examples = gen.generate(pattern, 3)
+    # Should cover all branches
+    assert set(examples) == {'foo', 'bar', 'baz'}
     assert_examples_match(pattern, examples)
 
 def test_group():
@@ -74,7 +88,17 @@ def test_edge_cases():
 
     pattern = '^abc$'
     examples = gen.generate(pattern, 3)
-    assert_examples_match('abc', examples)
+    assert_examples_match(pattern, examples)
+
+    # Only anchors
+    pattern = '^$'
+    examples = gen.generate(pattern, 3)
+    assert_examples_match(pattern, examples)
+
+    # Only lookahead/lookbehind (should not crash)
+    pattern = r'(?=abc)abc'
+    examples = gen.generate(pattern, 3)
+    assert_examples_match(pattern, examples)
 
 def main():
     test_literal()
