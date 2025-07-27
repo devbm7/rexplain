@@ -12,12 +12,14 @@ Explain, test, and generate examples for regular expressions.
 - Human-readable, line-by-line explanations of regex patterns
 - Example string generation for any regex
 - Detailed match testing with feedback
+- Visual railroad diagrams for regex patterns
 - Both a Python API and a CLI
 
 ## Features
 - **Regex Explanation:** Get clear, context-aware explanations for any regex pattern
 - **Test Regex:** Test if a string matches a pattern and see why/why not
 - **Generate Examples:** Generate example strings that match a regex
+- **Visual Diagrams:** Generate railroad diagrams to visualize regex patterns
 - **CLI & API:** Use from the command line or as a Python library
 - **Regex Flags:** Supports Python regex flags (e.g., `re.IGNORECASE`)
 
@@ -46,14 +48,25 @@ Test if a string matches a pattern:
 rexplain test "^hello.*" "hello world!"
 ```
 
+Generate a railroad diagram:
+```bash
+rexplain diagram "^\\w+$" --output diagram.svg
+rexplain diagram "^\\w+$" --detailed --output detailed.svg
+```
+
 ### Python API Usage
 
 ```python
-from rexplain import explain, examples, test
+from rexplain import explain, examples, test, diagram
 
 print(explain(r"\d+"))
 print(examples(r"[A-Z]{2}\d{2}", count=2))
 print(test(r"foo.*", "foobar"))
+
+# Generate diagrams
+diagram(r"^\w+$", "simple.svg")
+diagram(r"^\w+$", "detailed.svg", detailed=True)
+svg_content = diagram(r"^\w+$")  # Returns SVG as string
 ```
 
 #### Example: Detailed Explanation
@@ -82,6 +95,9 @@ Generates example strings that match the pattern.
 ### `test(pattern: str, test_string: str, flags: int = 0) -> dict`
 Tests if a string matches the pattern and explains why/why not.
 
+### `diagram(pattern: str, output_path: str = None, detailed: bool = False) -> str`
+Generates a railroad diagram for the regex pattern. Returns SVG content or saves to file.
+
 ## Contributing
 
 Contributions are welcome! To contribute:
@@ -89,10 +105,6 @@ Contributions are welcome! To contribute:
 - Add or improve features/tests/docs
 - Run tests
 - Open a pull request
-
-## License
-
-MIT
 
 ## Running Tests & Coverage
 
@@ -104,3 +116,7 @@ pytest
 ```
 
 If coverage is below 90%, pytest will fail. Coverage details will be shown in the terminal.
+
+## License
+
+MIT

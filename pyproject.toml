@@ -10,6 +10,9 @@ authors = [{name = "Dev B. Makwana"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.8"
+dependencies = [
+    "pyrailroad>=0.4.0"
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",

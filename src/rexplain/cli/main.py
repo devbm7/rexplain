@@ -7,6 +7,7 @@ try:
     from rexplain.core.explainer import RegexExplainer
     from rexplain.core.generator import ExampleGenerator
     from rexplain.core.tester import RegexTester
+    from rexplain.core.diagram import generate_railroad_diagram, generate_detailed_railroad_diagram
     from rexplain import __version__
 except ImportError as e:
     print("IMPORT ERROR:", e, file=sys.stderr)
@@ -20,6 +21,10 @@ except ImportError as e:
     class RegexTester:
         def test(self, pattern, string):
             return type('Result', (), {"matches": True, "reason": "[Stub] Always matches", "to_dict": lambda self: {"matches": True, "reason": "[Stub] Always matches"}})()
+    def generate_railroad_diagram(pattern, output_path=None):
+        return f"[Stub] Diagram for: {pattern}"
+    def generate_detailed_railroad_diagram(pattern, output_path=None):
+        return f"[Stub] Detailed diagram for: {pattern}"
     __version__ = "unknown"
 
 PROJECT_ABOUT = (
@@ -31,7 +36,7 @@ PROJECT_ABOUT = (
 def main():
     parser = argparse.ArgumentParser(
         description='rexplain: Regex explanation toolkit',
-        epilog='Examples:\n  rexplain explain "^\\d{3}-\\d{2}-\\d{4}$" --examples 2\n  rexplain test "foo.*" "foobar"\n  rexplain --version\n  rexplain --about',
+        epilog='Examples:\n  rexplain explain "^\\d{3}-\\d{2}-\\d{4}$" --examples 2\n  rexplain test "foo.*" "foobar"\n  rexplain diagram "^\\w+$" --output diagram.svg\n  rexplain --version\n  rexplain --about',
         formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument('--version', action='store_true', help='Show version and exit')
@@ -53,6 +58,12 @@ def main():
     test_parser = subparsers.add_parser('test', help='Test if a string matches a pattern')
     test_parser.add_argument('pattern', help='Regex pattern to test')
     test_parser.add_argument('string', help='String to test against the pattern')
+
+    # rexplain diagram "pattern" --output diagram.svg
+    diagram_parser = subparsers.add_parser('diagram', help='Generate a railroad diagram for a regex pattern')
+    diagram_parser.add_argument('pattern', help='Regex pattern to visualize')
+    diagram_parser.add_argument('--output', '-o', help='Output file path for SVG (default: print to stdout)')
+    diagram_parser.add_argument('--detailed', '-d', action='store_true', help='Generate detailed diagram based on parsed components')
 
     args = parser.parse_args()
 
@@ -90,6 +101,17 @@ def main():
             output = result.to_dict() if hasattr(result, 'to_dict') else result
             print(output)
             sys.exit(0 if getattr(result, 'matches', False) else 1)
+        elif args.command == 'diagram':
+            if args.detailed:
+                result = generate_detailed_railroad_diagram(args.pattern, args.output)
+            else:
+                result = generate_railroad_diagram(args.pattern, args.output)
+            
+            if not args.output:
+                print(result)
+            else:
+                print(f"Diagram saved to: {result}")
+            sys.exit(0)
         else:
             parser.print_help()
             sys.exit(1)
