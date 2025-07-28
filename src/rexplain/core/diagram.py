@@ -80,104 +80,108 @@ def _ast_to_railroad(ast_node):
         OneOrMore, zero_or_more, optional
     )
     
-    # Handle different AST node types
-    if isinstance(ast_node, Literal):
-        # Handle literal characters
-        if ast_node.value in ['^', '$', '@', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\']:
-            return Terminal(ast_node.value)
-        else:
-            return Terminal(f"'{ast_node.value}'")
-    
-    elif isinstance(ast_node, CharClass):
-        return Terminal(f"[{ast_node.value}]")
-    
-    elif isinstance(ast_node, Quantifier):
-        child = _ast_to_railroad(ast_node.child)
-        if ast_node.quant == '*':
-            return zero_or_more(child)
-        elif ast_node.quant == '+':
-            return OneOrMore(child)
-        elif ast_node.quant == '?':
-            return optional(child)
-        else:
-            # Handle other quantifiers like {n}, {n,m}, etc.
-            return Terminal(f"{child}{ast_node.quant}")
-    
-    elif isinstance(ast_node, ParserSequence):
-        # Convert each element in the sequence
-        elements = [_ast_to_railroad(elem) for elem in ast_node.elements]
-        if len(elements) == 1:
-            return elements[0]
-        else:
-            return Sequence(*elements)
-    
-    elif isinstance(ast_node, Alternation):
-        alternatives = [_ast_to_railroad(alt) for alt in ast_node.options]
-        if len(alternatives) == 1:
-            return alternatives[0]
-        else:
-            return Choice(0, *alternatives)
-    
-    elif isinstance(ast_node, Anchor):
-        return Terminal(ast_node.value)
-    
-    elif isinstance(ast_node, Escape):
-        # Handle escape sequences with meaningful labels
-        escape_mapping = {
-            '\\w': 'word char',
-            '\\d': 'digit',
-            '\\s': 'whitespace',
-            '\\W': 'non-word char',
-            '\\D': 'non-digit',
-            '\\S': 'non-whitespace',
-            '\\b': 'word boundary',
-            '\\B': 'non-word boundary',
-            '\\A': 'start of string',
-            '\\Z': 'end of string',
-            '\\z': 'end of string',
-            '\\G': 'end of prev match',
-            '\\n': 'newline',
-            '\\r': 'carriage return',
-            '\\t': 'tab',
-            '\\f': 'form feed',
-            '\\v': 'vertical tab',
-            '\\u': 'unicode char',
-            '\\x': 'hex char',
-            '\\N': 'named char',
-        }
+    try:
+        # Handle different AST node types
+        if isinstance(ast_node, Literal):
+            # Handle literal characters
+            if ast_node.value in ['^', '$', '@', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\']:
+                return Terminal(ast_node.value)
+            else:
+                return Terminal(f"'{ast_node.value}'")
         
-        # Check if it's a known escape sequence
-        if ast_node.value in escape_mapping:
-            return Terminal(escape_mapping[ast_node.value])
-        else:
-            # For unknown escape sequences, show the raw value
+        elif isinstance(ast_node, CharClass):
+            return Terminal(f"[{ast_node.value}]")
+        
+        elif isinstance(ast_node, Quantifier):
+            child = _ast_to_railroad(ast_node.child)
+            if ast_node.quant == '*':
+                return zero_or_more(child)
+            elif ast_node.quant == '+':
+                return OneOrMore(child)
+            elif ast_node.quant == '?':
+                return optional(child)
+            else:
+                # Handle other quantifiers like {n}, {n,m}, etc.
+                return Terminal(f"{child}{ast_node.quant}")
+        
+        elif isinstance(ast_node, ParserSequence):
+            # Convert each element in the sequence
+            elements = [_ast_to_railroad(elem) for elem in ast_node.elements]
+            if len(elements) == 1:
+                return elements[0]
+            else:
+                return Sequence(*elements)
+        
+        elif isinstance(ast_node, Alternation):
+            alternatives = [_ast_to_railroad(alt) for alt in ast_node.options]
+            if len(alternatives) == 1:
+                return alternatives[0]
+            else:
+                return Choice(0, *alternatives)
+        
+        elif isinstance(ast_node, Anchor):
             return Terminal(ast_node.value)
-    
-    elif isinstance(ast_node, Group):
-        # Handle groups - for now, just show the group type
-        if ast_node.children:
-            children = [_ast_to_railroad(child) for child in ast_node.children]
-            if len(children) == 1:
-                return children[0]
+        
+        elif isinstance(ast_node, Escape):
+            # Handle escape sequences with meaningful labels
+            escape_mapping = {
+                '\\w': 'word char',
+                '\\d': 'digit',
+                '\\s': 'whitespace',
+                '\\W': 'non-word char',
+                '\\D': 'non-digit',
+                '\\S': 'non-whitespace',
+                '\\b': 'word boundary',
+                '\\B': 'non-word boundary',
+                '\\A': 'start of string',
+                '\\Z': 'end of string',
+                '\\z': 'end of string',
+                '\\G': 'end of prev match',
+                '\\n': 'newline',
+                '\\r': 'carriage return',
+                '\\t': 'tab',
+                '\\f': 'form feed',
+                '\\v': 'vertical tab',
+                '\\u': 'unicode char',
+                '\\x': 'hex char',
+                '\\N': 'named char',
+            }
+            
+            # Check if it's a known escape sequence
+            if ast_node.value in escape_mapping:
+                return Terminal(escape_mapping[ast_node.value])
             else:
-                return Sequence(*children)
+                # For unknown escape sequences, show the raw value
+                return Terminal(ast_node.value)
+        
+        elif isinstance(ast_node, Group):
+            # Handle groups - for now, just show the group type
+            if ast_node.children:
+                children = [_ast_to_railroad(child) for child in ast_node.children]
+                if len(children) == 1:
+                    return children[0]
+                else:
+                    return Sequence(*children)
+            else:
+                # Empty group
+                if ast_node.group_type == 'GROUP_NONCAP':
+                    return Terminal('(?:)')
+                elif ast_node.group_type == 'GROUP_NAMED':
+                    return Terminal(f'(?P<{ast_node.name}>)')
+                elif ast_node.group_type == 'GROUP_LOOKAHEAD':
+                    return Terminal('(?=)')
+                elif ast_node.group_type == 'GROUP_NEG_LOOKAHEAD':
+                    return Terminal('(?!)')
+                elif ast_node.group_type == 'GROUP_LOOKBEHIND':
+                    return Terminal('(?<=)')
+                elif ast_node.group_type == 'GROUP_NEG_LOOKBEHIND':
+                    return Terminal('(?<!)')
+                else:
+                    return Terminal('()')
+        
         else:
-            # Empty group
-            if ast_node.group_type == 'GROUP_NONCAP':
-                return Terminal('(?:)')
-            elif ast_node.group_type == 'GROUP_NAMED':
-                return Terminal(f'(?P<{ast_node.name}>)')
-            elif ast_node.group_type == 'GROUP_LOOKAHEAD':
-                return Terminal('(?=)')
-            elif ast_node.group_type == 'GROUP_NEG_LOOKAHEAD':
-                return Terminal('(?!)')
-            elif ast_node.group_type == 'GROUP_LOOKBEHIND':
-                return Terminal('(?<=)')
-            elif ast_node.group_type == 'GROUP_NEG_LOOKBEHIND':
-                return Terminal('(?<!)')
-            else:
-                return Terminal('()')
+            # Fallback for unknown types
+            return Terminal(str(ast_node))
     
-    else:
-        # Fallback for unknown types
+    except Exception as e:
         return Terminal(str(ast_node)) 

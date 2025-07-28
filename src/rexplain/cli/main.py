@@ -10,7 +10,18 @@ try:
     from rexplain.core.diagram import generate_railroad_diagram, generate_detailed_railroad_diagram
     from rexplain import __version__
 except ImportError as e:
-
+    # Try alternative import paths for when running as installed package
+    try:
+        # Add current directory to path for development
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+        from rexplain.core.explainer import RegexExplainer
+        from rexplain.core.generator import ExampleGenerator
+        from rexplain.core.tester import RegexTester
+        from rexplain.core.diagram import generate_railroad_diagram, generate_detailed_railroad_diagram
+        from rexplain import __version__
+    except ImportError as e2:
+        print(f"IMPORT ERROR: {e2}", file=sys.stderr)
         # Stubs for development if core modules are missing
         class RegexExplainer:
             def explain(self, pattern):
