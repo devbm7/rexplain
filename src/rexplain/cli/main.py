@@ -10,22 +10,22 @@ try:
     from rexplain.core.diagram import generate_railroad_diagram, generate_detailed_railroad_diagram
     from rexplain import __version__
 except ImportError as e:
-    print("IMPORT ERROR:", e, file=sys.stderr)
-    # Stubs for development if core modules are missing
-    class RegexExplainer:
-        def explain(self, pattern):
-            return f"[Stub] Explanation for: {pattern}"
-    class ExampleGenerator:
-        def generate(self, pattern, count=3):
-            return [f"example_{i+1}" for i in range(count)]
-    class RegexTester:
-        def test(self, pattern, string):
-            return type('Result', (), {"matches": True, "reason": "[Stub] Always matches", "to_dict": lambda self: {"matches": True, "reason": "[Stub] Always matches"}})()
-    def generate_railroad_diagram(pattern, output_path=None):
-        return f"[Stub] Diagram for: {pattern}"
-    def generate_detailed_railroad_diagram(pattern, output_path=None):
-        return f"[Stub] Detailed diagram for: {pattern}"
-    __version__ = "unknown"
+
+        # Stubs for development if core modules are missing
+        class RegexExplainer:
+            def explain(self, pattern):
+                return f"[Stub] Explanation for: {pattern}"
+        class ExampleGenerator:
+            def generate(self, pattern, count=3):
+                return [f"example_{i+1}" for i in range(count)]
+        class RegexTester:
+            def test(self, pattern, string):
+                return type('Result', (), {"matches": True, "reason": "[Stub] Always matches", "to_dict": lambda self: {"matches": True, "reason": "[Stub] Always matches"}})()
+        def generate_railroad_diagram(pattern, output_path=None):
+            return f"[Stub] Diagram for: {pattern}"
+        def generate_detailed_railroad_diagram(pattern, output_path=None):
+            return f"[Stub] Detailed diagram for: {pattern}"
+        __version__ = "unknown"
 
 PROJECT_ABOUT = (
     "rexplain: Explain, test, and generate examples for regular expressions. "
