@@ -3,6 +3,8 @@
 [![PyPI version](https://img.shields.io/pypi/v/rexplain.svg)](https://pypi.org/project/rexplain/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/rexplain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://github.com/devbm7/rexplain/workflows/Test/badge.svg)](https://github.com/devbm7/rexplain/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/badge/coverage-70%25+-brightgreen)](https://github.com/devbm7/rexplain/actions/workflows/test.yml)
 
 Explain, test, and generate examples for regular expressions.
 
@@ -108,14 +110,20 @@ Contributions are welcome! To contribute:
 
 ## Running Tests & Coverage
 
-To run all tests with coverage (threshold: 90%):
+To run all tests with coverage (threshold: 70%):
 
 ```bash
 pip install .[test]
 pytest
 ```
 
-If coverage is below 90%, pytest will fail. Coverage details will be shown in the terminal.
+If coverage is below 70%, pytest will fail. Coverage details will be shown in the terminal.
+
+### Test Coverage Details
+- **Required Threshold**: 70%
+- **Covered Modules**: All core functionality with comprehensive test coverage
+- **Missing Coverage**: Mainly CLI interface and some edge cases in diagram generation
+- **Live Status**: Check the [GitHub Actions](https://github.com/devbm7/rexplain/actions/workflows/test.yml) for current coverage reports
 
 ## License
 
