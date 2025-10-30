@@ -47,3 +47,4 @@ path = "src/rexplain/__init__.py"
 [tool.pytest.ini_options]
 addopts = "--cov=src/rexplain --cov-report=term-missing --cov-fail-under=70"
 testpaths = ["tests"]
+norecursedirs = ["src", ".git", "dist", "build"]

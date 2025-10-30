@@ -24,6 +24,15 @@ class MatchResult:
             f"failed_at={self.failed_at}, partial_matches={self.partial_matches})"
         )
 
+    def to_dict(self):
+        """Convert the result to a dictionary format"""
+        return {
+            'matches': self.matches,
+            'reason': self.reason,
+            'failed_at': self.failed_at,
+            'partial_matches': self.partial_matches
+        }
+
 class RegexTester:
     """
     Tests if a string matches a regex pattern and provides detailed feedback.
