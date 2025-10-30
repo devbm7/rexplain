@@ -64,12 +64,66 @@ def test_explain_quantifiers():
     # Accept both the new and fallback output
     assert r"\d{2,4} - matches a digit character 2 to 4 times" in result or r"\d{2,4}" in result or "digit character" in result
 
+def test_explain_negated_charclass():
+    parser = RegexParser()
+    pattern = r'[^a-z]'
+    ast = parser.parse(pattern)
+    result = explain(ast)
+    print('Explanation:', result)
+    assert r"[^a-z]" in result or "negated" in result.lower() or "not" in result.lower()
+
+def test_explain_word_boundary():
+    parser = RegexParser()
+    pattern = r'\bword\b'
+    ast = parser.parse(pattern)
+    result = explain(ast)
+    print('Explanation:', result)
+    assert r"\b" in result
+
+def test_explain_dot_metachar():
+    parser = RegexParser()
+    pattern = r'a.b'
+    ast = parser.parse(pattern)
+    result = explain(ast)
+    print('Explanation:', result)
+    assert '.' in result
+
+def test_explain_star_quantifier():
+    parser = RegexParser()
+    pattern = r'a*'
+    ast = parser.parse(pattern)
+    result = explain(ast)
+    print('Explanation:', result)
+    assert '*' in result or 'zero or more' in result.lower()
+
+def test_explain_plus_quantifier():
+    parser = RegexParser()
+    pattern = r'a+'
+    ast = parser.parse(pattern)
+    result = explain(ast)
+    print('Explanation:', result)
+    assert '+' in result or 'one or more' in result.lower()
+
+def test_explain_alternation():
+    parser = RegexParser()
+    pattern = r'foo|bar'
+    ast = parser.parse(pattern)
+    result = explain(ast)
+    print('Explanation:', result)
+    assert 'f' in result and 'b' in result
+
 def main():
     test_explain_basic()
     test_explain_named_group()
     test_explain_lookahead()
     test_explain_inline_flags()
     test_explain_quantifiers()
+    test_explain_negated_charclass()
+    test_explain_word_boundary()
+    test_explain_dot_metachar()
+    test_explain_star_quantifier()
+    test_explain_plus_quantifier()
+    test_explain_alternation()
     print('All explainer tests passed!')
 
 if __name__ == '__main__':
